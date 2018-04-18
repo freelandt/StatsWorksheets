@@ -1,0 +1,58 @@
+---
+title: "Class11"
+author: "Trevor Freeland"
+date: "April 18, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(lme4)
+library(tidyverse)
+```
+
+
+```{r}
+leadplants <- read.csv("http://math.carleton.edu/Chihara/Stats345/Leadplants.csv")
+
+lead.lmerA <- lmer(hgt~1 + (1|pot/plant), data = leadplants)
+lead.lmerB <- lmer(hgt~time13 + (time13|pot/plant), data = leadplants)
+summary(lead.lmerA)
+summary(lead.lmerB)
+lead.lmerC <- lmer(hgt~time13*(sterile + soil) + (time13|pot/plant), data = leadplants)
+summary(lead.lmerC, cor = F)
+lead.lmerC1 <- lmer(hgt~time13*(sterile + soil) + (0 + time13|pot) + (1|pot) + (time13|pot:plant), data = leadplants)
+lead.lmerC2 <- lmer(hgt~time13*(sterile + soil) + (1|pot) + (time13|pot:plant), data = leadplants)
+l0 <- logLik(lead.lmerC2)
+l1 <- logLik(lead.lmerC)
+D <- 2*as.numeric(l1-l0)
+.5*(1-pchisq(D,2)) + .5*(1-pchisq(D,1))
+#not a big difference, so drop the random slope
+```
+
+```{r}
+N <- 100
+Dsim <- numeric(N)
+nullY <- simulate(lead.lmerC2,nsim=N)
+for (i in 1:N){
+  print(i)
+  null.lmer <- refit(lead.lmerC2, nullY[,i])
+  alt.lmer <- refit(lead.lmerC, nullY[,i])
+  Dsim[i] <- 2 * (logLik(alt.lmer) - logLik(null.lmer))
+}
+
+hist(Dsim)
+abline(v=D)
+mean(Dsim>D)
+
+
+lead.lmerCML <- update(lead.lmerC2, REML=FALSE)
+leadplants$soil2 <- ifelse(leadplants$soil == "STP", "STP", "Other")
+lead.lmerDML <- lmer(hgt~time13*(sterile + soil2) + (1|pot) + (time13|pot:plant), data = leadplants, REML = T)
+summary(lead.lmerDML)
+```
+
+
