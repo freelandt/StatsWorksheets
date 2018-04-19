@@ -56,3 +56,11 @@ summary(lead.lmerDML)
 ```
 
 
+```{r}
+fixef(lead.lmerC)
+ranef(lead.lmerC)
+coef(lead.lmerC)
+```
+
+
+
